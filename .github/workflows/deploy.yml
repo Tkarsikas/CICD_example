@@ -75,8 +75,8 @@ jobs:
             key: ${{ secrets.SSH_KEY }}
             port: 22
             script: |
-              cd /
-              sudo mkdir -p /opt/lemp/db/init/
+              cd ~/lemp
+              sudo mkdir -p /db/init/
 
         - name: Set permissions for /opt/lemp/db/init/
           uses: appleboy/ssh-action@v1.0.3
@@ -86,8 +86,8 @@ jobs:
             key: ${{ secrets.SSH_KEY }}
             port: 22
             script: |
-              sudo chown -R $(whoami) /opt/lemp/db/init/
-              sudo chmod -R u+w /opt/lemp/db/init/
+              sudo chown -R $(whoami) ~/lemp/db/init/
+              sudo chmod -R u+w ~/lemp/db/init/
 
         - name: Copy init.sql to VM
           uses: appleboy/scp-action@v0.1.4
@@ -97,7 +97,7 @@ jobs:
             key: ${{ secrets.SSH_KEY }}
             port: 22
             source: db/init/init.sql
-            target: /opt/lemp/db/init/
+            target: ~/lemp/db/init/
             strip_components: 2
 
         
@@ -120,7 +120,7 @@ jobs:
             key: ${{ secrets.SSH_KEY }}
             port: 22
             script: |
-              sudo cp /tmp/docker-compose.prod.yml /opt/lemp/docker-compose.yml
+              sudo cp /tmp/docker-compose.prod.yml ~/lemp/docker-compose.yml
             
 
   deploy:
