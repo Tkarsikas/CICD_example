@@ -145,9 +145,9 @@ jobs:
             # 2. Set ownership to the user who runs docker (often the SSH user)
             sudo chown -R $(whoami):$(whoami) ./db/init
             if [ ! -d "/var/lib/docker/volumes/lemp_db_data" ]; then
-              docker-compose down -v
+              sudo docker-compose down -v
             else
-              docker-compose down
+              sudo docker-compose down
             fi
  
             docker-compose pull

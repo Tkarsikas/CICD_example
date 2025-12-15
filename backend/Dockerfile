@@ -9,6 +9,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ /app/
 
-EXPOSE 8005
+EXPOSE 8000
 # Gunicorn: bind to all interfaces, 3 workers
 CMD ["gunicorn", "--workers", "3", "--bind", "0.0.0.0:8000", "app:app"]
