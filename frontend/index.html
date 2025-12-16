@@ -1,26 +1,28 @@
 <!DOCTYPE html>
-<html>
+<html lang="fi">
 <head>
-  <meta charset="utf-8" />
-  <title>Kontti LEMP Esimerkki</title>
+  <meta charset="UTF-8" />
+  <title>Ajan hakeminen API:sta</title>
 </head>
 <body>
-  <h1>Frontend (Nginx) konteilla cicd</h1>
-  <div id="msg">Loading...</div>
-  <script>
-    fetch('cicd/api')
-      .then(r => r.json())
-      .then(d => { document.getElementById('msg').innerText = d.message; })
-      .catch(e => { document.getElementById('msg').innerText = 'API error: ' + e; });
-  </script>
+  <h1>Server Time</h1>
+  <p id="time">Ladataan...</p>
 
-  <div id="time">Loading time...</div>
   <script>
-    fetch('cicd/api/time')
-      .then(r => r.json())
-      .then(d => { document.getElementById('time').innerText = d.time; })
-      .catch(e => { document.getElementById('time').innerText = 'API error: ' + e; });
+    fetch('/api/time')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Verkkovirhe: ' + response.status);
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Oletetaan JSON-muoto: { message: { time: "..." } }
+        document.getElementById('time').innerText = data.message.time;
+      })
+      .catch(error => {
+        document.getElementById('time').innerText = 'API error: ' + error.message;
+      });
   </script>
-
 </body>
 </html>
