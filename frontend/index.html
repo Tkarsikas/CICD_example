@@ -3,77 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LEMP API & Scripts</title>
+    <title>LEMP Stack Monitor</title>
     <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 50px; background: #f4f4f9; }
-        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 350px; text-align: center; margin-bottom: 20px; }
-        #time-display { font-size: 1.2rem; font-weight: bold; color: #007bff; margin: 15px 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 50px; background: #f0f2f5; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 380px; text-align: center; }
         
-        /* Button Styles */
-        .btn { 
-            display: inline-block;
-            text-decoration: none;
-            padding: 12px 20px; 
-            border-radius: 5px; 
-            cursor: pointer; 
-            font-weight: bold;
-            transition: background 0.3s;
-            margin: 10px;
-            border: none;
-        }
+        .status-row { display: flex; justify-content: space-between; align-items: center; margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 8px; }
+        .label { font-weight: 600; color: #555; }
         
+        #time-display { color: #007bff; font-weight: bold; }
+        
+        .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; }
+        .status-online { background: #d4edda; color: #155724; }
+        .status-offline { background: #f8d7da; color: #721c24; }
+
+        .btn { cursor: pointer; border: none; border-radius: 6px; padding: 12px; width: 100%; font-weight: bold; transition: 0.2s; margin-top: 10px; text-decoration: none; display: block; }
         .btn-refresh { background: #007bff; color: white; }
         .btn-refresh:hover { background: #0056b3; }
-
-        .btn-github { 
-            background: #24292e; 
-            color: white; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        .btn-github:hover { background: #444d56; }
-        
-        .error { color: red; font-size: 0.8rem; }
+        .btn-github { background: #24292e; color: white; margin-top: 15px; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h3>Server Status</h3>
-    <div id="time-display">Loading...</div>
-    <div id="error-message" class="error"></div>
+    <h2>System Monitor</h2>
     
-    <button class="btn btn-refresh" onclick="fetchTime()">Refresh Time</button>
-    
-    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+    <div class="status-row">
+        <span class="label">Backend Health:</span>
+        <span id="health-status" class="status-badge status-offline">Checking...</span>
+    </div>
 
+    <div class="status-row">
+        <span class="label">Server Time:</span>
+        <span id="time-display">--:--:--</span>
+    </div>
+
+    <button class="btn btn-refresh" onclick="fetchAllData()">Refresh Dashboard</button>
+    
     <a href="https://github.com/Tkarsikas/linux2/blob/main/scripts/script_cicdbackendtest.sh" 
-       target="_blank" 
-       class="btn btn-github">
-        View CI/CD Test Script
-    </a>
+       target="_blank" class="btn btn-github">View Test Script</a>
 </div>
 
 <script>
-    async function fetchTime() {
-        const display = document.getElementById('time-display');
-        const errorDisplay = document.getElementById('error-message');
-        display.innerText = "Fetching...";
-        errorDisplay.innerText = "";
+    async function fetchAllData() {
+        const timeEl = document.getElementById('time-display');
+        const healthEl = document.getElementById('health-status');
 
+        timeEl.innerText = "Loading...";
+        
         try {
-            const response = await fetch('http://86.50.23.16/cicd/api/time');
-            if (!response.ok) throw new Error(`Status: ${response.status}`);
-            const data = await response.json();
-            display.innerText = data.message.time;
+            // Run both fetches at the same time
+            const [timeRes, healthRes] = await Promise.all([
+                fetch('http://86.50.23.16/cicd/api/time'),
+                fetch('http://86.50.23.16/cicd/api/health')
+            ]);
+
+            // Handle Time Data
+            if (timeRes.ok) {
+                const timeData = await timeRes.json();
+                timeEl.innerText = timeData.message.time;
+            } else {
+                timeEl.innerText = "Error";
+            }
+
+            // Handle Health Data
+            if (healthRes.ok) {
+                const healthData = await healthRes.json();
+                // Assumes health returns { status: "healthy" } or similar
+                healthEl.innerText = "Online";
+                healthEl.className = "status-badge status-online";
+            } else {
+                healthEl.innerText = "Offline";
+                healthEl.className = "status-badge status-offline";
+            }
+
         } catch (error) {
-            display.innerText = "Error";
-            errorDisplay.innerText = "API Connection Failed";
+            console.error("Dashboard error:", error);
+            timeEl.innerText = "Connection Failed";
+            healthEl.innerText = "Unreachable";
+            healthEl.className = "status-badge status-offline";
         }
     }
-    fetchTime();
+
+    // Initial load
+    fetchAllData();
 </script>
 
 </body>
