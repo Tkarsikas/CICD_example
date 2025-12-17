@@ -1,26 +1,80 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Kontti LEMP Esimerkki</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LEMP API & Scripts</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 50px; background: #f4f4f9; }
+        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 350px; text-align: center; margin-bottom: 20px; }
+        #time-display { font-size: 1.2rem; font-weight: bold; color: #007bff; margin: 15px 0; }
+        
+        /* Button Styles */
+        .btn { 
+            display: inline-block;
+            text-decoration: none;
+            padding: 12px 20px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-weight: bold;
+            transition: background 0.3s;
+            margin: 10px;
+            border: none;
+        }
+        
+        .btn-refresh { background: #007bff; color: white; }
+        .btn-refresh:hover { background: #0056b3; }
+
+        .btn-github { 
+            background: #24292e; 
+            color: white; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-github:hover { background: #444d56; }
+        
+        .error { color: red; font-size: 0.8rem; }
+    </style>
 </head>
 <body>
-  <h1>Pieniä haasteita on, annan 10 pistettä jos käyt arvioimassa pikkusen myöhemmin uusiksi :p</h1>
-  <div id="msg">Loading...</div>
-  <script>
-    fetch('/cicd/api')
-      .then(r => r.json())
-      .then(d => { document.getElementById('msg').innerText = d.message; })
-      .catch(e => { document.getElementById('msg').innerText = 'API error: ' + e; });
-  </script>
 
-  <div id="time">Loading time...</div>
-  <script>
-    fetch('/cicd/api/time')
-      .then(r => r.json())
-      .then(d => { document.getElementById('time').innerText = d.time; })
-      .catch(e => { document.getElementById('time').innerText = 'API error: ' + e; });
-  </script>
+<div class="card">
+    <h3>Server Status</h3>
+    <div id="time-display">Loading...</div>
+    <div id="error-message" class="error"></div>
+    
+    <button class="btn btn-refresh" onclick="fetchTime()">Refresh Time</button>
+    
+    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+
+    <a href="https://github.com/Tkarsikas/linux2/blob/main/scripts/script_cicdbackendtest.sh" 
+       target="_blank" 
+       class="btn btn-github">
+        View CI/CD Test Script
+    </a>
+</div>
+
+<script>
+    async function fetchTime() {
+        const display = document.getElementById('time-display');
+        const errorDisplay = document.getElementById('error-message');
+        display.innerText = "Fetching...";
+        errorDisplay.innerText = "";
+
+        try {
+            const response = await fetch('http://86.50.23.16/cicd/api/time');
+            if (!response.ok) throw new Error(`Status: ${response.status}`);
+            const data = await response.json();
+            display.innerText = data.message.time;
+        } catch (error) {
+            display.innerText = "Error";
+            errorDisplay.innerText = "API Connection Failed";
+        }
+    }
+    fetchTime();
+</script>
 
 </body>
 </html>
