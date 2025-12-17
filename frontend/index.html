@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LEMP Stack Monitor</title>
+    <title>LEMP Stack & Crypto Monitor</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 50px; background: #f0f2f5; }
-        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 380px; text-align: center; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 380px; text-align: center; margin-bottom: 20px; }
         
         .status-row { display: flex; justify-content: space-between; align-items: center; margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 8px; }
         .label { font-weight: 600; color: #555; }
         
-        #time-display { color: #007bff; font-weight: bold; }
+        #time-display, .price-display { color: #007bff; font-weight: bold; }
         
         .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; }
         .status-online { background: #d4edda; color: #155724; }
@@ -20,6 +20,8 @@
         .btn { cursor: pointer; border: none; border-radius: 6px; padding: 12px; width: 100%; font-weight: bold; transition: 0.2s; margin-top: 10px; text-decoration: none; display: block; }
         .btn-refresh { background: #007bff; color: white; }
         .btn-refresh:hover { background: #0056b3; }
+        .btn-crypto { background: #f39c12; color: white; }
+        .btn-crypto:hover { background: #e67e22; }
         .btn-github { background: #24292e; color: white; margin-top: 15px; }
     </style>
 </head>
@@ -27,66 +29,89 @@
 
 <div class="card">
     <h2>System Monitor</h2>
-    
     <div class="status-row">
         <span class="label">Backend Health:</span>
         <span id="health-status" class="status-badge status-offline">Checking...</span>
     </div>
-
     <div class="status-row">
         <span class="label">Server Time:</span>
         <span id="time-display">--:--:--</span>
     </div>
-
-    <button class="btn btn-refresh" onclick="fetchAllData()">Refresh Dashboard</button>
-    
-    <a href="https://github.com/Tkarsikas/linux2/blob/main/scripts/script_cicdbackendtest.sh" 
-       target="_blank" class="btn btn-github">View Test Script</a>
+    <button class="btn btn-refresh" onclick="fetchSystemData()">Refresh System</button>
 </div>
 
+<div class="card">
+    <h2>Crypto Prices (EUR)</h2>
+    <div class="status-row">
+        <span class="label">Bitcoin:</span>
+        <span id="btc-price" class="price-display">Fetching...</span>
+    </div>
+    <div class="status-row">
+        <span class="label">Ethereum:</span>
+        <span id="eth-price" class="price-display">Fetching...</span>
+    </div>
+    <button class="btn btn-crypto" onclick="fetchCryptoData()">Refresh Crypto</button>
+</div>
+
+<a href="https://github.com/Tkarsikas/linux2/blob/main/scripts/script_cicdbackendtest.sh" 
+   target="_blank" class="btn btn-github" style="width: 380px; text-align: center;">View Test Script</a>
+
 <script>
-    async function fetchAllData() {
+    // --- System Data (Time & Health) ---
+    async function fetchSystemData() {
         const timeEl = document.getElementById('time-display');
         const healthEl = document.getElementById('health-status');
-
         timeEl.innerText = "Loading...";
-        
+
         try {
-            // Run both fetches at the same time
             const [timeRes, healthRes] = await Promise.all([
                 fetch('http://86.50.23.16/cicd/api/time'),
                 fetch('http://86.50.23.16/cicd/api/health')
             ]);
 
-            // Handle Time Data
             if (timeRes.ok) {
                 const timeData = await timeRes.json();
                 timeEl.innerText = timeData.message.time;
-            } else {
-                timeEl.innerText = "Error";
             }
 
-            // Handle Health Data
             if (healthRes.ok) {
-                const healthData = await healthRes.json();
-                // Assumes health returns { status: "healthy" } or similar
                 healthEl.innerText = "Online";
                 healthEl.className = "status-badge status-online";
             } else {
                 healthEl.innerText = "Offline";
                 healthEl.className = "status-badge status-offline";
             }
-
         } catch (error) {
-            console.error("Dashboard error:", error);
             timeEl.innerText = "Connection Failed";
             healthEl.innerText = "Unreachable";
             healthEl.className = "status-badge status-offline";
         }
     }
 
-    // Initial load
-    fetchAllData();
+    // --- Crypto Data (CoinGecko) ---
+    async function fetchCryptoData() {
+        const btcEl = document.getElementById('btc-price');
+        const ethEl = document.getElementById('eth-price');
+        btcEl.innerText = "Updating...";
+        ethEl.innerText = "Updating...";
+
+        try {
+            const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=eur");
+            const data = await response.json();
+
+            // Format as currency (€)
+            btcEl.innerText = `€${data.bitcoin.eur.toLocaleString()}`;
+            ethEl.innerText = `€${data.ethereum.eur.toLocaleString()}`;
+        } catch (error) {
+            console.error("Crypto Fetch Error:", error);
+            btcEl.innerText = "Error";
+            ethEl.innerText = "Error";
+        }
+    }
+
+    // Initial load for everything
+    fetchSystemData();
+    fetchCryptoData();
 </script>
 
 </body>
