@@ -11,7 +11,7 @@
         .status-row { display: flex; justify-content: space-between; align-items: center; margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 8px; }
         .label { font-weight: 600; color: #555; }
         
-        #time-display, .price-display { color: #007bff; font-weight: bold; }
+        #time-display, .price-display { color: #007bff; font-weight: bold; font-family: 'Courier New', Courier, monospace; }
         
         .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; }
         .status-online { background: #d4edda; color: #155724; }
@@ -21,14 +21,16 @@
         .btn-refresh { background: #007bff; color: white; }
         .btn-refresh:hover { background: #0056b3; }
         .btn-crypto { background: #f39c12; color: white; }
-        .btn-crypto:hover { background: #e67e22; }
         .btn-github { background: #24292e; color: white; margin-top: 15px; }
+        
+        .live-indicator { font-size: 0.7rem; color: #e74c3c; vertical-align: middle; margin-left: 5px; animation: blink 1s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>System Monitor</h2>
+    <h2>System Monitor <span class="live-indicator">● LIVE</span></h2>
     <div class="status-row">
         <span class="label">Backend Health:</span>
         <span id="health-status" class="status-badge status-offline">Checking...</span>
@@ -37,44 +39,43 @@
         <span class="label">Server Time:</span>
         <span id="time-display">--:--:--</span>
     </div>
-    <button class="btn btn-refresh" onclick="fetchSystemData()">Refresh System</button>
+    <button class="btn btn-refresh" onclick="fetchHealth()">Refresh Health</button>
 </div>
 
 <div class="card">
     <h2>Crypto Prices (EUR)</h2>
     <div class="status-row">
         <span class="label">Bitcoin:</span>
-        <span id="btc-price" class="price-display">Fetching...</span>
+        <span id="btc-price" class="price-display">--</span>
     </div>
     <div class="status-row">
         <span class="label">Ethereum:</span>
-        <span id="eth-price" class="price-display">Fetching...</span>
+        <span id="eth-price" class="price-display">--</span>
     </div>
     <button class="btn btn-crypto" onclick="fetchCryptoData()">Refresh Crypto</button>
 </div>
 
-<a href="https://github.com/Tkarsikas/linux2/blob/main/scripts/script_cicdbackendtest.sh" 
-   target="_blank" class="btn btn-github" style="width: 380px; text-align: center;">View Test Script</a>
-
 <script>
-    // --- System Data (Time & Health) ---
-    async function fetchSystemData() {
+    // --- 1. LIVE TIME (Every 1 Second) ---
+    async function fetchTime() {
         const timeEl = document.getElementById('time-display');
-        const healthEl = document.getElementById('health-status');
-        timeEl.innerText = "Loading...";
-
         try {
-            const [timeRes, healthRes] = await Promise.all([
-                fetch('http://86.50.23.16/cicd/api/time'),
-                fetch('http://86.50.23.16/cicd/api/health')
-            ]);
-
-            if (timeRes.ok) {
-                const timeData = await timeRes.json();
-                timeEl.innerText = timeData.message.time;
+            const res = await fetch('http://86.50.23.16/cicd/api/time');
+            if (res.ok) {
+                const data = await res.json();
+                timeEl.innerText = data.message.time;
             }
+        } catch (error) {
+            timeEl.innerText = "Sync Error";
+        }
+    }
 
-            if (healthRes.ok) {
+    // --- 2. HEALTH CHECK ---
+    async function fetchHealth() {
+        const healthEl = document.getElementById('health-status');
+        try {
+            const res = await fetch('http://86.50.23.16/cicd/api/health');
+            if (res.ok) {
                 healthEl.innerText = "Online";
                 healthEl.className = "status-badge status-online";
             } else {
@@ -82,36 +83,37 @@
                 healthEl.className = "status-badge status-offline";
             }
         } catch (error) {
-            timeEl.innerText = "Connection Failed";
             healthEl.innerText = "Unreachable";
             healthEl.className = "status-badge status-offline";
         }
     }
 
-    // --- Crypto Data (CoinGecko) ---
+    // --- 3. CRYPTO DATA ---
     async function fetchCryptoData() {
         const btcEl = document.getElementById('btc-price');
         const ethEl = document.getElementById('eth-price');
-        btcEl.innerText = "Updating...";
-        ethEl.innerText = "Updating...";
-
         try {
-            const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=eur");
-            const data = await response.json();
-
-            // Format as currency (€)
+            const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=eur");
+            const data = await res.json();
             btcEl.innerText = `€${data.bitcoin.eur.toLocaleString()}`;
             ethEl.innerText = `€${data.ethereum.eur.toLocaleString()}`;
         } catch (error) {
-            console.error("Crypto Fetch Error:", error);
             btcEl.innerText = "Error";
             ethEl.innerText = "Error";
         }
     }
 
-    // Initial load for everything
-    fetchSystemData();
+    // INITIAL LOAD
+    fetchHealth();
     fetchCryptoData();
+    fetchTime();
+
+    // SET INTERVALS
+    // Update time every 1000ms (1 second)
+    setInterval(fetchTime, 1000);
+    
+    // Optional: Update health every 30 seconds
+    setInterval(fetchHealth, 30000);
 </script>
 
 </body>
